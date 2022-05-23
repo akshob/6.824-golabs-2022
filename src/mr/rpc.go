@@ -23,6 +23,30 @@ type ExampleReply struct {
 }
 
 // Add your RPC definitions here.
+type WorkerState int
+const (
+	Idle WorkerState = iota
+	InProgress
+	Done
+)
+
+type WorkerArgs struct {
+	Id int
+	State WorkerState
+}
+
+type WorkerTask int
+const (
+	Map WorkerTask = iota
+	Reduce
+)
+
+type WorkerReply struct {
+	Task WorkerTask
+	File string
+	ReducePartitions int
+	KeepAlive bool
+}
 
 
 // Cook up a unique-ish UNIX-domain socket name

@@ -1,10 +1,13 @@
 package mr
 
-import "fmt"
-import "log"
-import "net/rpc"
-import "hash/fnv"
-
+import (
+	"fmt"
+	"hash/fnv"
+	"log"
+	"net/rpc"
+	"os"
+	"time"
+)
 
 //
 // Map functions return a slice of KeyValue.
@@ -31,39 +34,31 @@ func ihash(key string) int {
 func Worker(mapf func(string, string) []KeyValue,
 	reducef func(string, []string) string) {
 
-	// Your worker implementation here.
-
-	// uncomment to send the Example RPC to the coordinator.
-	// CallExample()
+	pid := os.Getegid()
+	
+	keepAlive := true
+	
+	for keepAlive {
+		reply := AskForTask(pid)
+		//TODO: if AskTask fails retry
+		keepAlive = reply.KeepAlive
+		time.Sleep(time.Second)
+	}
 
 }
 
-//
-// example function to show how to make an RPC call to the coordinator.
-//
-// the RPC argument and reply types are defined in rpc.go.
-//
-func CallExample() {
-
-	// declare an argument structure.
-	args := ExampleArgs{}
-
-	// fill in the argument(s).
-	args.X = 99
-
-	// declare a reply structure.
-	reply := ExampleReply{}
-
-	// send the RPC request, wait for the reply.
-	// the "Coordinator.Example" tells the
-	// receiving server that we'd like to call
-	// the Example() method of struct Coordinator.
-	ok := call("Coordinator.Example", &args, &reply)
+func AskForTask(id int) *WorkerReply {
+	args := WorkerArgs{}
+	args.Id = id
+	args.State = WorkerState(Idle)
+	reply := WorkerReply{}
+	ok := call("Coordinator.AskForTask", &args, &reply)
 	if ok {
-		// reply.Y should be 100.
-		fmt.Printf("reply.Y %v\n", reply.Y)
+		return &reply
 	} else {
-		fmt.Printf("call failed!\n")
+		//may be the coordinator exitted?
+		fmt.Printf("AskForTask call failed for %d", id)
+		return nil
 	}
 }
 
